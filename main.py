@@ -8,16 +8,9 @@
 Победа Молодец Новая игра
 Смэрть Не молодец Новая игра
 '''
-import startboard
-import pygame
-road = False
-can_defence = False
-fps = 10
-size = 1000, 1000
-screen = pygame.display.set_mode(size)
-play = False
-running = True
-clock = pygame.time.Clock()
+
+from inital import *
+
 
 class Enemy:
     def __init__(self, hp, speed):
@@ -29,81 +22,106 @@ class Building:
         pass
 
 
-class Board:
-    # создание поля
-    def __init__(self, width, height):
-        self.width = width
-        self.height = height
-        self.board = [[0] * width for _ in range(height)]
-        # значения по умолчанию
-        self.left = 10
-        self.top = 10
-        self.cell_size = 30
+def start_screen():
+    intro_text = ["Марио для бедных", "",
+                  "Починил стены",
+                  "теперь они твердые"]
+    fon = pygame.transform.scale(load_image('fon.jpg'), (WIDTH, HEIGHT))
+    screen.blit(fon, (0, 0))
+    font = pygame.font.Font(None, 30)
+    text_coord = 50
+    for line in intro_text:
+        string_rendered = font.render(line, 1, pygame.Color('black'))
+        intro_rect = string_rendered.get_rect()
+        text_coord += 10
+        intro_rect.top = text_coord
+        intro_rect.x = 10
+        text_coord += intro_rect.height
+        screen.blit(string_rendered, intro_rect)
 
-    # настройка внешнего вида
-    def set_view(self, left, top, cell_size):
-        self.left = left
-        self.top = top
-        self.cell_size = cell_size
-
-    def render(self, surf):
-
-        for i in range(self.height):
-            for j in range(self.width):
-
-                rect = (self.left + j * self.cell_size, self.top + i * self.cell_size,
-                        self.cell_size, self.cell_size)
-
-                if self.board[i][j] == 0:
-                    pygame.draw.rect(surf, (255, 255, 255), rect, 1)
-                elif self.board[i][j] == 1:
-                    pygame.draw.rect(surf, (189, 183, 107), rect)
-                else:
-                    pygame.draw.rect(surf, (0, 0, 205), rect)
-
-    def get_cell(self, mouse_pos):
-        xm, ym = mouse_pos
-        for nl, line in enumerate(self.board):
-            for nc, cell in enumerate(line):
-                xc, yc = self.left + nl * self.cell_size, self.top + nc * self.cell_size
-                if xc <= xm <= xc + self.cell_size and yc <= ym <= yc + self.cell_size:
-                    return xc // self.cell_size, yc // self.cell_size
-
-    def on_click(self, cell_coords):
-
-        try:
-            x, y = cell_coords
-            if self.board[y][x] == 2:
-                # pass
-                self.board[y][x] = 0
-            else:
-                self.board[y][x] = 2
-        except TypeError:
-            pass
-
-    def get_click(self, mouse_pos):
-        cell = self.get_cell(mouse_pos)
-        self.on_click(cell)
+    while True:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                terminate()
+            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                return
+        pygame.display.flip()
+        clock.tick(FPS)
 
 
-board = Board(40, 40)
+# start_screen()
 
-board.set_view(0, 0, 25)
-board.board = startboard.boardd
-while running:
-    screen.fill((0, 0, 0))
-    board.render(screen)
+
+def load_level(filename):
+    filename = "data/" + filename
+    with open(filename, 'r') as mapFile:
+        level_map = [line.strip() for line in mapFile]
+    max_width = max(map(len, level_map))
+    return list(map(lambda x: list(x), list(map(lambda x: x.ljust(max_width, '.'), level_map))))
+
+
+class Tile(pygame.sprite.Sprite):
+    def __init__(self, tile_type, pos_x, pos_y):
+        super().__init__(tiles_group, all_sprites)
+        self.image = tile_images[tile_type]
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+
+
+class Player(pygame.sprite.Sprite):
+    def __init__(self, pos_x, pos_y):
+        super().__init__(player_group, all_sprites)
+        self.image = player_image
+        self.x = pos_x
+        self.y = pos_y
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+
+
+def generate_level(level):
+    new_player, x, y, p_pos = None, None, None, None
+    for y in range(len(level)):
+        for x in range(len(level[y])):
+            if level[y][x] == '.':
+                Tile('empty', x, y)
+            elif level[y][x] == '#':
+                Tile('wall', x, y)
+            elif level[y][x] == '@':
+                Tile('road', x, y)
+                p_pos = x, y
+                new_player = Player(x, y)
+            elif level[y][x] == ':':
+                Tile('road', x, y)
+            elif level[y][x] == '%':
+                Tile('ptower', x, y)
+    return new_player, x, y, p_pos
+
+
+level = load_level('level.txt')
+player, level_x, level_y, player_pos = generate_level(level)
+size = width, height = level_x * tile_width + tile_width, level_y * tile_height + tile_height
+pygame.init()
+gamescreen = pygame.display.set_mode(size)
+px, py = player_pos
+while True:
+    # camera.update(player)
+    # for sprite in all_sprites:
+    #     camera.apply(sprite)
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
-            running = False
-        if event.type == pygame.MOUSEBUTTONDOWN:
-            # if event.button == 1:
-            board.get_click(event.pos)
-        if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_r:
-                board.board = [[0] * board.width for _ in range(board.height)]
+            terminate()
 
-    # screen.fill((0, 0, 0))
-    board.render(screen)
+        if event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_UP:
+                py -= 1
+                player.rect.y -= player.rect.h
+            elif event.key == pygame.K_DOWN:
+                py += 1
+                player.rect.y += player.rect.h
+            elif event.key == pygame.K_RIGHT:
+                px += 1
+                player.rect.x += player.rect.w
+            elif event.key == pygame.K_LEFT:
+                px -= 1
+                player.rect.x -= player.rect.w
+    tiles_group.draw(gamescreen)
+    player_group.draw(gamescreen)
     pygame.display.flip()
-print(board.board, sep='\n')

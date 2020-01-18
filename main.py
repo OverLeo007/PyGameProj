@@ -12,16 +12,6 @@
 from inital import *
 
 
-class Enemy:
-    def __init__(self, hp, speed):
-        pass
-
-
-class Building:
-    def __init__(self, fspeed, damage):
-        pass
-
-
 def start_screen():
     intro_text = ["Марио для бедных", "",
                   "Починил стены",
@@ -68,12 +58,29 @@ class Tile(pygame.sprite.Sprite):
 
 
 class Player(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y):
+    def __init__(self, pos_x, pos_y, image):
         super().__init__(player_group, all_sprites)
-        self.image = player_image
+        self.image = image
         self.x = pos_x
         self.y = pos_y
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+
+
+class Enemy(Player):
+
+    def __init__(self, pos_x, pos_y, hp, speed, image=creep_image):
+        self.hp = hp
+        self.speed = speed
+        super().__init__(pos_x, pos_y, image)
+
+
+class Building(Player):
+    def __init__(self, pos_x, pos_y, fspeed, damage, area, image=tile_images['ptower']):
+        super().__init__(pos_x, pos_y, image)
+        self.fspeed = fspeed
+        self.damage = damage
+        self.area = area  # rect
+
 
 
 def generate_level(level):
@@ -87,12 +94,14 @@ def generate_level(level):
             elif level[y][x] == '@':
                 Tile('road', x, y)
                 p_pos = x, y
-                new_player = Player(x, y)
+                enemy = Enemy(x, y, 10, 20)
             elif level[y][x] == ':':
                 Tile('road', x, y)
             elif level[y][x] == '%':
-                Tile('ptower', x, y)
-    return new_player, x, y, p_pos
+                Tile('empty', x, y)
+                Building(x, y, 10, 20, (10, 10, 10, 10))
+                # tower = Player(x, y, 'ptower')
+    return enemy, x, y, p_pos
 
 
 level = load_level('level.txt')

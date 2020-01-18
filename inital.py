@@ -10,6 +10,7 @@ road = False
 can_defence = False
 play = False
 running = True
+piczie = 50
 clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
@@ -40,6 +41,6 @@ def terminate():
 
 tile_images = {'wall': load_image('box.png'), 'empty': load_image('floor.png'), 'road': load_image('road.png'),
                'ptower': load_image('blace.png')}
-player_image = pygame.transform.flip(load_image('creep.png'), True, False)
+creep_image = pygame.transform.flip(load_image('creep.png'), True, False)
 
 tile_width = tile_height = 50

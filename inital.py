@@ -3,8 +3,9 @@ import os
 import sys
 from PIL import Image
 
-FPS = 50
-piczie = 40
+move = True
+FPS = 60
+sprite_size = 35
 size = WIDTH, HEIGHT = 500, 500
 pygame.init()
 screen = pygame.display.set_mode(size)
@@ -15,13 +16,13 @@ running = True
 clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
-player_group = pygame.sprite.Group()
+creep_group = pygame.sprite.Group()
 
 
-def resize_image(size, exepte=()):
-    width, height = size
+def resize_image(sizer, exepte=()):
+    width, height = sizer
     os.chdir(os.getcwd() + '\\data')
-    for pic in os.listdir():
+    for pic in os.listdir(path='.'):
         pic: str
         if not pic.endswith('HQ.png') and pic.endswith('.png') and pic not in exepte:
             img = Image.open(pic[:-4] + 'HQ.png')
@@ -31,7 +32,6 @@ def resize_image(size, exepte=()):
                 resized_img = img.resize((width, height), Image.ANTIALIAS)
             resized_img.save(pic)
     os.chdir(os.getcwd()[:-5])
-
 
 
 def load_image(name, color_key=None):
@@ -56,9 +56,8 @@ def terminate():
     sys.exit()
 
 
-tile_width = tile_height = piczie
+tile_width = tile_height = sprite_size
 resize_image((tile_width, tile_height))
 tile_images = {'wall': load_image('box.png'), 'empty': load_image('floor.png'), 'road': load_image('road.png')}
 building_image = load_image('blace.png')
-creep_image = pygame.transform.flip(load_image('creep.png'), True, False)
-
+creep_image = load_image('creep.png')

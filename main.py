@@ -13,15 +13,15 @@ from inital import *
 
 
 def start_screen():
-    fon = pygame.transform.scale(load_image('menu2222.png'), (WIDTH, HEIGHT))
+    fon = pygame.transform.scale(load_image('menuHQ.png'), (WIDTH, HEIGHT))
     screen.blit(fon, (0, 0))
     while True:
         for event in pygame.event.get():
-             if event.type == pygame.QUIT:
-                 pygame.quit()
-                 sys.exit()
-             elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
-                 return
+            if event.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif event.type == pygame.KEYDOWN or event.type == pygame.MOUSEBUTTONDOWN:
+                return
         pygame.display.flip()
         clock.tick(FPS)
 
@@ -62,12 +62,12 @@ class Enemy(Player):
 
 
 class Building(Player):
-    def __init__(self, pos_x, pos_y, fspeed, damage, area, image=tile_images['ptower']):
+    def __init__(self, pos_x, pos_y, fspeed, damage, area, image=building_image):
         super().__init__(pos_x, pos_y, image)
         self.fspeed = fspeed
         self.damage = damage
         self.area = area  # rect
-
+        self.rect = self.image.get_rect().move(tile_width * pos_x - piczie // 2, tile_height * pos_y - piczie // 2)
 
 
 def generate_level(level):
@@ -102,11 +102,17 @@ while True:
     # for sprite in all_sprites:
     #     camera.apply(sprite)
     for event in pygame.event.get():
+        if event.type != pygame.MOUSEMOTION:
+            print(event)
+
         if event.type == pygame.QUIT:
             terminate()
 
         if event.type == pygame.KEYDOWN:
-            if event.key == pygame.K_UP:
+            if event.key == pygame.K_ESCAPE:
+                terminate()
+
+            elif event.key == pygame.K_UP:
                 py -= 1
                 player.rect.y -= player.rect.h
             elif event.key == pygame.K_DOWN:

@@ -3,7 +3,7 @@ import os
 import sys
 
 FPS = 50
-size = WIDTH, HEIGHT = 400, 300
+size = WIDTH, HEIGHT = 600, 500
 pygame.init()
 screen = pygame.display.set_mode(size)
 road = False

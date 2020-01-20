@@ -15,6 +15,15 @@ from random import randint
 print_rect = True
 
 
+font_name = pygame.font.match_font('arial')
+def draw_text(surf, text, size, x, y):
+    font = pygame.font.Font(font_name, size)
+    text_surface = font.render(text, True, pygame.Color('white'))
+    text_rect = text_surface.get_rect()
+    text_rect.midtop = (x, y)
+    surf.blit(text_surface, text_rect)
+
+
 class Tile(pygame.sprite.Sprite):
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
@@ -22,23 +31,33 @@ class Tile(pygame.sprite.Sprite):
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
 
 
-class Player(pygame.sprite.Sprite):
-    def __init__(self, pos_x, pos_y, image):
-        super().__init__(creep_group, all_sprites)
-        self.image = image
-        self.x = pos_x
-        self.y = pos_y
-        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
+class Player:
+    def __init__(self):
+        self.lives = 100
+
+    def draw_lives_bar(self, surf, x, y, pct):
+        if pct < 0:
+            pct = 0
+        BAR_LENGTH = 142
+        BAR_HEIGHT = 20
+        fill = (pct / 100) * BAR_LENGTH
+        outline_rect = pygame.Rect(x, y, BAR_LENGTH, BAR_HEIGHT)
+        fill_rect = pygame.Rect(x, y, fill, BAR_HEIGHT)
+        pygame.draw.rect(surf, pygame.Color('orange'), fill_rect)
+        pygame.draw.rect(surf, pygame.Color('white'), outline_rect, 2)
 
 
-class Enemy(Player):
-
+class Enemy(pygame.sprite.Sprite):
     def __init__(self, pos_x, pos_y, fx, fy, hp, speed, image=creep_image):
+        super().__init__(creep_group, all_sprites)
         self.hp = hp
         self.speed = speed
         self.fx = fx
         self.fy = fy
-        super().__init__(pos_x, pos_y, image)
+        self.image = image
+        self.x = pos_x
+        self.y = pos_y
+        self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
 
     def update(self):
         if print_rect:
@@ -51,6 +70,10 @@ class Enemy(Player):
             self.rect.x += int(self.speed / 10)
         elif tx == self.fx and ty == self.fy:
             self.kill()
+
+        if self.hp == 0:
+            self.kill()
+            SCORE += 10
 
 
 class Building(pygame.sprite.Sprite):
@@ -85,10 +108,14 @@ class Building(pygame.sprite.Sprite):
         rect = xx, yy, xx1, yy1
         selfrect = x, y, x1, y1
 
-        return rect[0] <= selfrect[0] <= rect[3] and rect[1] <= selfrect[1] <= rect[2] or \
-               rect[0] <= selfrect[3] <= rect[3] and rect[1] <= selfrect[1] <= rect[2] or \
-               rect[0] <= selfrect[0] <= rect[3] and rect[1] <= selfrect[2] <= rect[2] or \
-               rect[0] <= selfrect[3] <= rect[3] and rect[1] <= selfrect[2] <= rect[2]
+        s1 = (x >= xx and x <= xx1) or (x1 >= xx and x1 <= xx1)
+        s2 = (y >= yy and y <= yy1) or (y1 >= yy and y1 <= yy1)
+        s3 = (xx >= x and xx <= x1) or (xx1 >= x and xx1 <= x1)
+        s4 = (yy >= y and yy <= y1) or (yy1 >= y and yy1 <= y1)
+        if ((s1 and s2) or (s3 and s4)) or ((s1 and s4) or (s3 and s2)):
+            return True
+        else:
+            return False
 
 
 def make_enemy(y, speed, hp):
@@ -148,9 +175,9 @@ creeps, level_x, level_y = generate_level(level)
 size = width, height = level_x * tile_width + tile_width, level_y * tile_height + tile_height
 pygame.init()
 gamescreen = pygame.display.set_mode(size)
+SCORE = 0
 
 while True:
-
     for event in pygame.event.get():
         if event.type == pygame.MOUSEBUTTONDOWN:
             make_enemy(-1, randint(10, 30), 10)
@@ -164,13 +191,20 @@ while True:
             if event.key == pygame.K_t:
                 print_rect = not print_rect
     for rect in [sprite.rect[:] for sprite in creep_group]:
-        col =  [sprite for sprite in tower_group if sprite.check_intersection(rect)]
+        col = [sprite for sprite in tower_group if sprite.check_intersection(rect)]
         if col:
-            print(*col, sep='\n')
+            pass
+            #print(*col, sep='\n') # отнимаем хп у крипов
+            #Enemy.hp -= 2 # ??????
+
     tiles_group.draw(gamescreen)
     creep_group.draw(gamescreen)
     tower_group.draw(gamescreen)
     creep_group.update()
     tower_group.update()
+    player = Player()
+    draw_text(gamescreen, str(SCORE), 18, 200, 10)
+    player.draw_lives_bar(gamescreen, 5, 5, player.lives)
+    print(player.lives)
     clock.tick(FPS)
     pygame.display.flip()

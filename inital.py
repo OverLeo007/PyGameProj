@@ -9,6 +9,7 @@ sprite_size = 50
 size = WIDTH, HEIGHT = 500, 500
 pygame.init()
 gamescreen = pygame.display.set_mode(size)
+pygame.display.set_caption("WWIII: Castle Defense")
 road = False
 can_defence = False
 play = False

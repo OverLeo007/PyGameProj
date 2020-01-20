@@ -5,10 +5,10 @@ from PIL import Image
 
 move = True
 FPS = 60
-sprite_size = 35
+sprite_size = 50
 size = WIDTH, HEIGHT = 500, 500
 pygame.init()
-screen = pygame.display.set_mode(size)
+gamescreen = pygame.display.set_mode(size)
 road = False
 can_defence = False
 play = False
@@ -17,6 +17,7 @@ clock = pygame.time.Clock()
 all_sprites = pygame.sprite.Group()
 tiles_group = pygame.sprite.Group()
 creep_group = pygame.sprite.Group()
+tower_group = pygame.sprite.Group()
 
 
 def resize_image(sizer, exepte=()):

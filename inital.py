@@ -10,9 +10,10 @@ FPS = 60
 sprite_size = 50
 size = WIDTH, HEIGHT = 500, 500
 FIRE = 30
-is_start = True
+is_start = True ###<-----------
 start_wait = 31
 spawn_creep = 29
+generate_text = 28
 ratio = sprite_size / 50
 pygame.init()
 gamescreen = pygame.display.set_mode(size)
@@ -22,7 +23,6 @@ can_defence = False
 play = False
 running = True
 clock = pygame.time.Clock()
-
 
 
 def resize_image(sizer, exepte=()):
@@ -61,6 +61,9 @@ def terminate():
     pygame.quit()
     sys.exit()
 
+
+gameIcon = load_image('creep.png')
+pygame.display.set_icon(gameIcon)
 
 tile_width = tile_height = sprite_size
 resize_image((tile_width, tile_height))

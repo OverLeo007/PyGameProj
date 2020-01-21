@@ -4,9 +4,16 @@ import sys
 from PIL import Image
 
 move = True
+SCORE = 300
+COST = 100
 FPS = 60
 sprite_size = 50
 size = WIDTH, HEIGHT = 500, 500
+FIRE = 30
+is_start = True
+start_wait = 31
+spawn_creep = 29
+ratio = sprite_size / 50
 pygame.init()
 gamescreen = pygame.display.set_mode(size)
 pygame.display.set_caption("WWIII: Castle Defense")
@@ -15,10 +22,7 @@ can_defence = False
 play = False
 running = True
 clock = pygame.time.Clock()
-all_sprites = pygame.sprite.Group()
-tiles_group = pygame.sprite.Group()
-creep_group = pygame.sprite.Group()
-tower_group = pygame.sprite.Group()
+
 
 
 def resize_image(sizer, exepte=()):
@@ -60,6 +64,7 @@ def terminate():
 
 tile_width = tile_height = sprite_size
 resize_image((tile_width, tile_height))
-tile_images = {'wall': load_image('box.png'), 'empty': load_image('floor.png'), 'road': load_image('road.png')}
+tile_images = {'wall': load_image('box.png'), 'empty': load_image('floor.png'), 'road': load_image('road.png'),
+               'bplace': load_image('bplace.png')}
 building_image = load_image('blace.png')
 creep_image = load_image('creep.png')

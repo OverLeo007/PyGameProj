@@ -17,6 +17,47 @@ print_rect = True
 font_name = pygame.font.match_font('arial')
 
 
+def start_screen(img='MenuHQ.png'):
+    fon = pygame.transform.scale(load_image(img), (WIDTH, HEIGHT))
+    gamescreen.blit(fon, (0, 0))
+    while True:
+        for eventt in pygame.event.get():
+            if eventt.type == pygame.QUIT:
+                pygame.quit()
+                sys.exit()
+            elif eventt.type == pygame.KEYDOWN or eventt.type == pygame.MOUSEBUTTONDOWN:
+                return
+        pygame.display.flip()
+        clock.tick(FPS)
+
+
+def load_level(filename):
+    filename = "data/" + filename
+    with open(filename, 'r') as mapFile:
+        level_map = [line.strip() for line in mapFile]
+    max_width = max(map(len, level_map))
+    return list(map(lambda x: list(x), list(map(lambda x: x.ljust(max_width, '.'), level_map))))
+
+
+def generate_level(lvl):
+    enemy, x, y, p_pos = None, None, None, None
+    for y in range(len(lvl)):
+        for x in range(len(lvl[y])):
+            if lvl[y][x] == '.':
+                Tile('empty', x, y)
+            elif lvl[y][x] == '#':
+                Tile('wall', x, y)
+            elif lvl[y][x] == '@':
+                Tile('road', x, y)
+            elif lvl[y][x] == ':':
+                Tile('road', x, y)
+            elif lvl[y][x] == '%':
+                Tile('bplace', x, y)
+                can_place.append((x, y))
+                # Building(x, y)
+    return x, y
+
+
 def draw_text(surf, text, size, x, y):
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, pygame.Color('white'))
@@ -40,6 +81,13 @@ def place_tower(x, y):
                 Building(rx1, ry1)
                 SCORE -= COST
                 COST = int(COST * 1.1)
+
+
+def make_enemy(y, speed, hp):
+    x = randint(5, 7)
+    fx = 20
+    fy = 20 - x - 1
+    return Enemy(x, y, fx, fy, hp, speed)
 
 
 class Tile(pygame.sprite.Sprite):
@@ -71,6 +119,8 @@ class Player:
 
 
 class Enemy(pygame.sprite.Sprite):
+    image_boom = load_image("boom.png")
+
     def __init__(self, pos_x, pos_y, fx, fy, hp, speed, image=creep_image):
         super().__init__(creep_group, all_sprites)
         self.hp = hp
@@ -97,8 +147,9 @@ class Enemy(pygame.sprite.Sprite):
             self.kill()
 
         if self.hp <= 0:
-            self.kill()
+            self.image = self.image_boom
             SCORE += 25
+            self.kill()#???? если убрать килл будет плавать картинка взрыва
 
     def check_intersection(self, area):
         x, y, w, h = self.rect[:]
@@ -137,76 +188,28 @@ class Building(pygame.sprite.Sprite):
         else:
             pass
 
-
-def make_enemy(y, speed, hp):
-    x = randint(5, 7)
-    fx = 20
-    fy = 20 - x - 1
-    return Enemy(x, y, fx, fy, hp, speed)
-
-
-def start_screen(img='MenuHQ.png'):
-    fon = pygame.transform.scale(load_image(img), (WIDTH, HEIGHT))
-    gamescreen.blit(fon, (0, 0))
-    while True:
-        for eventt in pygame.event.get():
-            if eventt.type == pygame.QUIT:
-                pygame.quit()
-                sys.exit()
-            elif eventt.type == pygame.KEYDOWN or eventt.type == pygame.MOUSEBUTTONDOWN:
-                return
-        pygame.display.flip()
-        clock.tick(FPS)
-
-
-# start_screen()
-
-
-def load_level(filename):
-    filename = "data/" + filename
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: list(x), list(map(lambda x: x.ljust(max_width, '.'), level_map))))
-
-
-def generate_level(lvl):
-    enemy, x, y, p_pos = None, None, None, None
-    for y in range(len(lvl)):
-        for x in range(len(lvl[y])):
-            if lvl[y][x] == '.':
-                Tile('empty', x, y)
-            elif lvl[y][x] == '#':
-                Tile('wall', x, y)
-            elif lvl[y][x] == '@':
-                Tile('road', x, y)
-            elif lvl[y][x] == ':':
-                Tile('road', x, y)
-            elif lvl[y][x] == '%':
-                Tile('bplace', x, y)
-                can_place.append((x, y))
-                # Building(x, y)
-
-    return x, y
-
+start_screen()
 
 while pygame.event.wait().type != pygame.QUIT:
+    is_start = True ### в инитале точно такая же переменная
     all_sprites = pygame.sprite.Group()
     tiles_group = pygame.sprite.Group()
     creep_group = pygame.sprite.Group()
     tower_group = pygame.sprite.Group()
-    can_place = []
-    is_start = True
+
     pygame.time.set_timer(FIRE, 300)
     pygame.time.set_timer(start_wait, 1000)
     pygame.time.set_timer(spawn_creep, 1000)
+    pygame.time.set_timer(generate_text, 15000)############# не работает :(
+
+    can_place = []
     level = load_level('level.txt')
     level_x, level_y = generate_level(level)
     size = width, height = level_x * tile_width + tile_width, level_y * tile_height + tile_height
+
     pygame.init()
     gamescreen = pygame.display.set_mode(size)
     player = Player()
-    print(len(can_place))
 
     while True:
         for event in pygame.event.get():
@@ -230,19 +233,28 @@ while pygame.event.wait().type != pygame.QUIT:
                     col = [sprite for sprite in creep_group if sprite.check_intersection(area)]
                     if col:
                         col[randint(0, len(col) - 1)].hp -= 2
+                        draw_text(gamescreen, '-2', int(10 * (ratio / 0.5)),
+                                  col[randint(0, len(col) - 1)].x * sprite_size,
+                                  col[randint(0, len(col) - 1)].y * sprite_size)###########
+
             if event.type == start_wait and is_start is True:
                 is_start = False
-                print('Attack!', is_start)
+                draw_text(gamescreen, "Attack!!!", 30, 200 * ratio, 200 * ratio)#############
+
             if event.type == spawn_creep and is_start is False:
                 if randint(1, 3) == 3:
-                    print('spawned')
                     make_enemy(-1, randint(15, 25), randint(15, 25))
 
+            if event.type == generate_text:
+                draw_text(gamescreen, "Осторожнее!"
+                                      "Кажется, они становятся сильнее!!!",
+                          int(30 * (ratio / 0.5)), 200 * ratio, 10 * ratio)##################
 
         all_sprites.draw(gamescreen)
         creep_group.update()
         tower_group.update()
         draw_text(gamescreen, str(SCORE), int(18 * (ratio / 0.5)), 200 * ratio, 10 * ratio)
+        draw_text(gamescreen, f"Стоимость башни: {str(COST)}", int(15 * (ratio / 0.5)), 800 * ratio, 10 * ratio)
         player.draw_lives_bar(gamescreen, 5, 5, player.lives)
         if player.is_game_over():
             start_screen('gameoverHQ.jpg')

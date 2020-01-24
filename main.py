@@ -12,6 +12,7 @@
 from inital import *
 from random import randint
 
+
 print_rect = True
 
 font_name = pygame.font.match_font('arial')
@@ -149,6 +150,9 @@ class Enemy(pygame.sprite.Sprite):
         if self.hp <= 0:
             self.image = self.image_boom
             SCORE += 25
+            #boom_sound.play(loops=1)
+            #pygame.mixer.Sound.play(boom_sound)
+            #pygame.mixer.music.stop()
             self.kill()#???? если убрать килл будет плавать картинка взрыва
 
     def check_intersection(self, area):
@@ -190,8 +194,17 @@ class Building(pygame.sprite.Sprite):
 
 start_screen()
 
+
+
+#fullname1 = os.path.join('data', 'boom_music.mp3')
+#boom_sound = pygame.mixer.Sound(fullname1)
+
 while pygame.event.wait().type != pygame.QUIT:
-    is_start = True ### в инитале точно такая же переменная
+    fullname = os.path.join('data', 'fon_music.mp3')
+    pygame.mixer.music.load(fullname)
+    pygame.mixer.music.set_volume(0.1)
+    pygame.mixer.music.play(loops=-1)
+    #is_start = True ### в инитале точно такая же переменная
     all_sprites = pygame.sprite.Group()
     tiles_group = pygame.sprite.Group()
     creep_group = pygame.sprite.Group()
@@ -200,9 +213,10 @@ while pygame.event.wait().type != pygame.QUIT:
     pygame.time.set_timer(FIRE, 300)
     pygame.time.set_timer(start_wait, 1000)
     pygame.time.set_timer(spawn_creep, 1000)
-    pygame.time.set_timer(generate_text, 15000)############# не работает :(
 
     can_place = []
+    begin_attack = False
+    text = False
     level = load_level('level.txt')
     level_x, level_y = generate_level(level)
     size = width, height = level_x * tile_width + tile_width, level_y * tile_height + tile_height
@@ -233,31 +247,38 @@ while pygame.event.wait().type != pygame.QUIT:
                     col = [sprite for sprite in creep_group if sprite.check_intersection(area)]
                     if col:
                         col[randint(0, len(col) - 1)].hp -= 2
-                        draw_text(gamescreen, '-2', int(10 * (ratio / 0.5)),
-                                  col[randint(0, len(col) - 1)].x * sprite_size,
-                                  col[randint(0, len(col) - 1)].y * sprite_size)###########
+                        text = True
+                        text_x = col[randint(0, len(col) - 1)].x * sprite_size
+                        text_y = col[randint(0, len(col) - 1)].y * sprite_size
 
             if event.type == start_wait and is_start is True:
                 is_start = False
-                draw_text(gamescreen, "Attack!!!", 30, 200 * ratio, 200 * ratio)#############
+                begin_attack = True
 
             if event.type == spawn_creep and is_start is False:
                 if randint(1, 3) == 3:
                     make_enemy(-1, randint(15, 25), randint(15, 25))
 
-            if event.type == generate_text:
-                draw_text(gamescreen, "Осторожнее!"
-                                      "Кажется, они становятся сильнее!!!",
-                          int(30 * (ratio / 0.5)), 200 * ratio, 10 * ratio)##################
 
         all_sprites.draw(gamescreen)
         creep_group.update()
         tower_group.update()
+        if begin_attack:
+            draw_text(gamescreen, "Attack!!!", 40, 750 * ratio, 200 * ratio)
+
+        if text: ####<-------------------------
+            draw_text(gamescreen, '-2', int(10 * (ratio / 0.5)), text_x, text_y + 10)
+            text = False
+            pygame.display.flip()
+
         draw_text(gamescreen, str(SCORE), int(18 * (ratio / 0.5)), 200 * ratio, 10 * ratio)
         draw_text(gamescreen, f"Стоимость башни: {str(COST)}", int(15 * (ratio / 0.5)), 800 * ratio, 10 * ratio)
         player.draw_lives_bar(gamescreen, 5, 5, player.lives)
         if player.is_game_over():
+            pygame.mixer.music.stop()
             start_screen('gameoverHQ.jpg')
+            SCORE = 300
+            COST = 100
             break
         clock.tick(FPS)
         pygame.display.flip()

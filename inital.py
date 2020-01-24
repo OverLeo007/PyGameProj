@@ -31,7 +31,7 @@ def resource_path(relative):
         return os.path.join(os.path.abspath("."), relative)
 
 
-def resize_image(sizer, exepte=()):
+def resize_image(sizer, exepte=()):  # изменение размера изображения
     width, height = sizer
     os.chdir(os.getcwd() + '\\data')
     for pic in os.listdir(path='.'):
@@ -46,7 +46,7 @@ def resize_image(sizer, exepte=()):
     os.chdir(os.getcwd()[:-5])
 
 
-def load_image(name, color_key=None):
+def load_image(name, color_key=None):  # загрузка и обработка изображения
     fullname = resource_path(os.path.join('data', name))
     try:
         image = pygame.image.load(fullname)
@@ -63,11 +63,12 @@ def load_image(name, color_key=None):
     return image
 
 
-def terminate():
+def terminate():  # выход из программы
     pygame.quit()
     sys.exit()
 
 
+# загрузка изображений
 gameIcon = load_image('creep.png')
 pygame.display.set_icon(gameIcon)
 

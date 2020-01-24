@@ -6,7 +6,7 @@ print_rect = False
 font_name = pygame.font.match_font('arial')
 
 
-def start_screen(img='MenuHQ.png'):
+def start_screen(img='MenuHQ.png'):  # обработка начального окна
     fon = pygame.transform.scale(load_image(img), (WIDTH, HEIGHT))
     gamescreen.blit(fon, (0, 0))
     while True:
@@ -20,15 +20,7 @@ def start_screen(img='MenuHQ.png'):
         clock.tick(FPS)
 
 
-def load_level(filename):
-    filename = "data/" + filename
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: list(x), list(map(lambda x: x.ljust(max_width, '.'), level_map))))
-
-
-def generate_level(lvl):
+def generate_level(lvl):  # генерация уровня
     enemy, x, y, p_pos = None, None, None, None
     for y in range(len(lvl)):
         for x in range(len(lvl[y])):
@@ -43,11 +35,18 @@ def generate_level(lvl):
             elif lvl[y][x] == '%':
                 Tile('bplace', x, y)
                 can_place.append((x, y))
-                # Building(x, y)
     return x, y
 
 
-def draw_text(surf, text, size, x, y, color=pygame.Color('white')):
+def load_level(filename):  # загрузка уровня
+    filename = "data/" + filename
+    with open(filename, 'r') as mapFile:
+        level_map = [line.strip() for line in mapFile]
+    max_width = max(map(len, level_map))
+    return list(map(lambda x: list(x), list(map(lambda x: x.ljust(max_width, '.'), level_map))))
+
+
+def draw_text(surf, text, size, x, y, color=pygame.Color('white')):  # отрисовка текста
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect()
@@ -55,7 +54,7 @@ def draw_text(surf, text, size, x, y, color=pygame.Color('white')):
     surf.blit(text_surface, text_rect)
 
 
-def place_tower(x, y):
+def place_tower(x, y):  # расположение башен
     global COST, SCORE
     for rect in can_place:
         rx1, ry1 = map(lambda x: x * sprite_size, rect)
@@ -72,25 +71,25 @@ def place_tower(x, y):
                 COST = int(COST * 1.1)
 
 
-def make_enemy(y, speed, hp):
+def make_enemy(y, speed, hp):  # создание врага
     x = randint(5, 7)
     fx = 20
     fy = 20 - x - 1
     return Enemy(x, y, fx, fy, hp, speed)
 
 
-class Tile(pygame.sprite.Sprite):
+class Tile(pygame.sprite.Sprite):  # создание башни
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
 
 
-class Player:
+class Player:  # класс игрока
     def __init__(self):
         self.lives = 100
 
-    def draw_lives_bar(self, surf, x, y, pct):
+    def draw_lives_bar(self, surf, x, y, pct):  # отрисовка здоровья игрока
         if pct < 0:
             pct = 0
         BAR_LENGTH = int(142 * ratio)
@@ -107,8 +106,7 @@ class Player:
         return False
 
 
-class Enemy(pygame.sprite.Sprite):
-
+class Enemy(pygame.sprite.Sprite):  # класс врага
     def __init__(self, pos_x, pos_y, fx, fy, hp, speed, image=creep_image):
         super().__init__(creep_group, all_sprites)
         self.image_boom = load_image("boom.png")
@@ -122,7 +120,7 @@ class Enemy(pygame.sprite.Sprite):
         self.y = pos_y
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
 
-    def update(self):
+    def update(self):  # обновление расположения игрока и проверка на живучесть
         global SCORE
         if print_rect:
             pygame.draw.rect(gamescreen, (0, 0, 0), self.rect[:], 2)
@@ -144,7 +142,7 @@ class Enemy(pygame.sprite.Sprite):
             death.play()
             tasks.append(['bom', self, 10])
 
-    def check_intersection(self, area):
+    def check_intersection(self, area):  # проверка на вхождение зоны врага с зоной башни
         x, y, w, h = self.rect[:]
         x1 = x + w
         y1 = y + h
@@ -161,7 +159,7 @@ class Enemy(pygame.sprite.Sprite):
             return False
 
 
-class Building(pygame.sprite.Sprite):
+class Building(pygame.sprite.Sprite):  # класс башни
     def __init__(self, pos_x, pos_y, image=building_image):
         super().__init__(tower_group, all_sprites)
         self.image = image
@@ -175,7 +173,7 @@ class Building(pygame.sprite.Sprite):
 
         self.area.inflate_ip(170 * ratio, 150 * ratio)
 
-    def update(self, *args):
+    def update(self, *args):  # отрисовка башни
         if print_rect:
             pygame.draw.rect(gamescreen, (0, 0, 0), self.area[:], 2)
         else:
@@ -184,13 +182,16 @@ class Building(pygame.sprite.Sprite):
 
 start_screen()
 begin_attack = False
+
+# звуковая обстановка
 boom = pygame.mixer.Sound(resource_path(os.path.join('data', 'boom_sound.wav')))
 death = pygame.mixer.Sound(resource_path(os.path.join('data', 'death_sound.wav')))
 pygame.mixer.music.load(resource_path(os.path.join('data', 'fon_music.mp3')))
 pygame.mixer.music.set_volume(0.1)
 tasks = []
-while pygame.event.wait().type != pygame.QUIT:
 
+# главный цикл прграммы
+while pygame.event.wait().type != pygame.QUIT:
     pygame.mixer.music.play(loops=-1)
 
     all_sprites, tiles_group, creep_group, tower_group = \
@@ -199,6 +200,7 @@ while pygame.event.wait().type != pygame.QUIT:
     is_start = True
     text = False
 
+    # установка таймеров
     pygame.time.set_timer(FIRE, 1000)
     pygame.time.set_timer(start_wait, 1000)
     pygame.time.set_timer(spawn_creep, 1000)
@@ -227,7 +229,7 @@ while pygame.event.wait().type != pygame.QUIT:
                 elif event.button == 1:
                     place_tower(*event.pos)
 
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT:  # выход из игры
                 terminate()
 
             if event.type == pygame.KEYDOWN:
@@ -244,14 +246,13 @@ while pygame.event.wait().type != pygame.QUIT:
                 if randint(1, 3) == 3:
                     make_enemy(-1, randint(15, 25), randint(15, 25))
 
-            if event.type == FIRE:
+            if event.type == FIRE:  # атака врага
                 for area in [tower.area[:] for tower in tower_group]:
                     col = [sprite for sprite in creep_group.sprites() if sprite.check_intersection(area)]
                     if col:
                         ncol = randint(0, len(col) - 1)
                         col[ncol].hp -= 4
                         boom.play(loops=1)
-                        # text = True
                         text_x = col[ncol].rect.x
                         text_y = col[ncol].rect.y
                         tasks.append(['hp', text_x, text_y, 10])
@@ -270,9 +271,8 @@ while pygame.event.wait().type != pygame.QUIT:
                 task[2] -= 1
                 if tasks[n][2] <= 0:
                     task[1].kill()
-                # print(task)
-            # text = False
 
+        # отрисовка текста и панели здоровья
         draw_text(gamescreen, str(SCORE), int(18 * (ratio / 0.5)), 200 * ratio, 10 * ratio)
         draw_text(gamescreen, f"Стоимость башни: {str(COST)}", int(15 * (ratio / 0.5)), 800 * ratio, 10 * ratio)
         player.draw_lives_bar(gamescreen, 5, 5, player.lives)

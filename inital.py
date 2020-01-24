@@ -3,10 +3,9 @@ import os
 import sys
 from PIL import Image
 
-move = True
-
+# Основные значения
 FPS = 60
-sprite_size = 25
+sprite_size = 25  # Параметр, регулирующий размер экрана (для получения значения в пикселях умножить на 20)
 size = WIDTH, HEIGHT = 500, 500
 FIRE = 30
 start_wait = 31
@@ -16,11 +15,8 @@ ratio = sprite_size / 50
 pygame.init()
 gamescreen = pygame.display.set_mode(size)
 pygame.display.set_caption("WWIII: Castle Defense")
-road = False
-can_defence = False
-play = False
-running = True
 clock = pygame.time.Clock()
+move = True
 
 
 def resource_path(relative):
@@ -29,6 +25,14 @@ def resource_path(relative):
         return os.path.join(sys._MEIPASS, relative)
     else:
         return os.path.join(os.path.abspath("."), relative)
+
+
+def load_level(filename):  # загрузка уровня
+    filename = "data/" + filename
+    with open(filename, 'r') as mapFile:
+        level_map = [line.strip() for line in mapFile]
+    max_width = max(map(len, level_map))
+    return list(map(lambda x: list(x), list(map(lambda x: x.ljust(max_width, '.'), level_map))))
 
 
 def resize_image(sizer, exepte=()):  # изменение размера изображения

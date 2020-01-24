@@ -1,9 +1,6 @@
 from inital import *
 from random import randint
-
-print_rect = False
-
-font_name = pygame.font.match_font('arial')
+import pygame
 
 
 def start_screen(img='MenuHQ.png'):  # обработка начального окна
@@ -38,14 +35,6 @@ def generate_level(lvl):  # генерация уровня
     return x, y
 
 
-def load_level(filename):  # загрузка уровня
-    filename = "data/" + filename
-    with open(filename, 'r') as mapFile:
-        level_map = [line.strip() for line in mapFile]
-    max_width = max(map(len, level_map))
-    return list(map(lambda x: list(x), list(map(lambda x: x.ljust(max_width, '.'), level_map))))
-
-
 def draw_text(surf, text, size, x, y, color=pygame.Color('white')):  # отрисовка текста
     font = pygame.font.Font(font_name, size)
     text_surface = font.render(text, True, color)
@@ -54,7 +43,7 @@ def draw_text(surf, text, size, x, y, color=pygame.Color('white')):  # отри�
     surf.blit(text_surface, text_rect)
 
 
-def place_tower(x, y):  # расположение башен
+def place_tower(x, y):  # создание башен
     global COST, SCORE
     for rect in can_place:
         rx1, ry1 = map(lambda x: x * sprite_size, rect)
@@ -78,7 +67,7 @@ def make_enemy(y, speed, hp):  # создание врага
     return Enemy(x, y, fx, fy, hp, speed)
 
 
-class Tile(pygame.sprite.Sprite):  # создание башни
+class Tile(pygame.sprite.Sprite):  # инициализация клетки
     def __init__(self, tile_type, pos_x, pos_y):
         super().__init__(tiles_group, all_sprites)
         self.image = tile_images[tile_type]
@@ -120,10 +109,10 @@ class Enemy(pygame.sprite.Sprite):  # класс врага
         self.y = pos_y
         self.rect = self.image.get_rect().move(tile_width * pos_x, tile_height * pos_y)
 
-    def update(self):  # обновление расположения игрока и проверка на живучесть
+    def update(self):  # обновление расположения врага и проверка на живучесть
         global SCORE
         if print_rect:
-            pygame.draw.rect(gamescreen, (0, 0, 0), self.rect[:], 2)
+            pygame.draw.rect(gamescreen, pygame.Color('Red'), self.rect[:], 2)
         if self.moove:
             x, y = self.rect.x, self.rect.y
             tx, ty = x // sprite_size, y // sprite_size
@@ -142,7 +131,7 @@ class Enemy(pygame.sprite.Sprite):  # класс врага
             death.play()
             tasks.append(['bom', self, 10])
 
-    def check_intersection(self, area):  # проверка на вхождение зоны врага с зоной башни
+    def check_intersection(self, area):  # проверка на вхождение зоны врага в зону башни
         x, y, w, h = self.rect[:]
         x1 = x + w
         y1 = y + h
@@ -175,13 +164,15 @@ class Building(pygame.sprite.Sprite):  # класс башни
 
     def update(self, *args):  # отрисовка башни
         if print_rect:
-            pygame.draw.rect(gamescreen, (0, 0, 0), self.area[:], 2)
+            pygame.draw.rect(gamescreen, pygame.Color('Cyan'), self.area[:], 2)
         else:
             pass
 
 
 start_screen()
 begin_attack = False
+print_rect = False
+font_name = pygame.font.match_font('arial')
 
 # звуковая обстановка
 boom = pygame.mixer.Sound(resource_path(os.path.join('data', 'boom_sound.wav')))
@@ -202,7 +193,7 @@ while pygame.event.wait().type != pygame.QUIT:
 
     # установка таймеров
     pygame.time.set_timer(FIRE, 1000)
-    pygame.time.set_timer(start_wait, 1000)
+    pygame.time.set_timer(start_wait, 5000)
     pygame.time.set_timer(spawn_creep, 1000)
 
     can_place = []
@@ -214,11 +205,11 @@ while pygame.event.wait().type != pygame.QUIT:
     pygame.init()
     player = Player()
     SCORE = 300
-    COST = 0
+    COST = 100
 
     while True:
         all_sprites.draw(gamescreen)
-        creep_group.update()
+
         tower_group.update()
 
         for event in pygame.event.get():
@@ -229,13 +220,14 @@ while pygame.event.wait().type != pygame.QUIT:
                 elif event.button == 1:
                     place_tower(*event.pos)
 
-            if event.type == pygame.QUIT:  # выход из игры
+            if event.type == pygame.QUIT:  # Выход из игры
                 terminate()
 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
                     terminate()
-                if event.key == pygame.K_t:
+                if event.key == pygame.K_h:
+                    # Отображение областей пересечения объектов
                     print_rect = not print_rect
 
             if event.type == start_wait and is_start is True:
@@ -243,15 +235,18 @@ while pygame.event.wait().type != pygame.QUIT:
                 begin_attack = True
 
             if event.type == spawn_creep and is_start is False:
-                if randint(1, 3) == 3:
-                    make_enemy(-1, randint(15, 25), randint(15, 25))
+                x = randint(1, 2)
+                print('spawn', x)
+                if x == 2:
+                    make_enemy(0, randint(20, 23), randint(15, 18))
+                    print([creep.rect for creep in creep_group.sprites()])
 
-            if event.type == FIRE:  # атака врага
+            if event.type == FIRE:  # атака врага башней
                 for area in [tower.area[:] for tower in tower_group]:
                     col = [sprite for sprite in creep_group.sprites() if sprite.check_intersection(area)]
                     if col:
                         ncol = randint(0, len(col) - 1)
-                        col[ncol].hp -= 4
+                        col[ncol].hp -= 6
                         boom.play(loops=1)
                         text_x = col[ncol].rect.x
                         text_y = col[ncol].rect.y
@@ -259,10 +254,11 @@ while pygame.event.wait().type != pygame.QUIT:
 
         if begin_attack:
             draw_text(gamescreen, "Attack!!!", 40, 750 * ratio, 200 * ratio, pygame.Color('red'))
-
+        creep_group.update()
+        # обработка задач выведения на холст временных изображений
         for n, task in enumerate(tasks):
             if task[0] == 'hp':
-                draw_text(gamescreen, '-4', int(10 * (ratio / 0.5)), int(task[1] + 25 * ratio),
+                draw_text(gamescreen, '-6', int(10 * (ratio / 0.5)), int(task[1] + 25 * ratio),
                           int(task[2] + 25 * ratio), pygame.Color('red'))
                 tasks[n][3] -= 1
                 if tasks[n][3] <= 0:

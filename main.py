@@ -1,19 +1,7 @@
-"""
-Враги хп урон скорость (сильнее с каждой волной + босс в конце (сила зависит от цвета)) враг машинка разных цветов
-Защита скорострельность урон выстрел - спавн частиц
-Поле (40 на 40 клеток 15 на 15 пикс, 5 толщина дороги, 1 враг, 3х3 сооружения) клетка
-Экраны:
-Меню Лого Старт
-Игра Хп Золото Волна Пауза меню защиты (выбор защиты, апгрейд?) Старт Волны(5 шт) + босс
-Победа Молодец Новая игра
-Смэрть Не молодец Новая игра
-"""
-
 from inital import *
 from random import randint
 
-
-print_rect = True
+print_rect = False
 
 font_name = pygame.font.match_font('arial')
 
@@ -59,9 +47,9 @@ def generate_level(lvl):
     return x, y
 
 
-def draw_text(surf, text, size, x, y):
+def draw_text(surf, text, size, x, y, color=pygame.Color('white')):
     font = pygame.font.Font(font_name, size)
-    text_surface = font.render(text, True, pygame.Color('white'))
+    text_surface = font.render(text, True, color)
     text_rect = text_surface.get_rect()
     text_rect.midtop = (x, y)
     surf.blit(text_surface, text_rect)
@@ -120,10 +108,11 @@ class Player:
 
 
 class Enemy(pygame.sprite.Sprite):
-    image_boom = load_image("boom.png")
 
     def __init__(self, pos_x, pos_y, fx, fy, hp, speed, image=creep_image):
         super().__init__(creep_group, all_sprites)
+        self.image_boom = load_image("boom.png")
+        self.moove = True
         self.hp = hp
         self.speed = speed
         self.fx = fx
@@ -137,23 +126,23 @@ class Enemy(pygame.sprite.Sprite):
         global SCORE
         if print_rect:
             pygame.draw.rect(gamescreen, (0, 0, 0), self.rect[:], 2)
-        x, y = self.rect.x, self.rect.y
-        tx, ty = x // sprite_size, y // sprite_size
-        if ty != self.fy:
-            self.rect.y += int(self.speed / 10)
-        elif tx != self.fx:
-            self.rect.x += int(self.speed / 10)
-        elif tx == self.fx and ty == self.fy:
-            player.lives -= 10
-            self.kill()
+        if self.moove:
+            x, y = self.rect.x, self.rect.y
+            tx, ty = x // sprite_size, y // sprite_size
+            if ty != self.fy:
+                self.rect.y += int(self.speed / 10 * ratio)
+            elif tx != self.fx:
+                self.rect.x += int(self.speed / 10 * ratio)
+            elif tx == self.fx and ty == self.fy:
+                player.lives -= 10
+                self.moove = False
 
-        if self.hp <= 0:
+        if self.hp <= 0 and self.moove:
+            self.moove = False
             self.image = self.image_boom
             SCORE += 25
-            #boom_sound.play(loops=1)
-            #pygame.mixer.Sound.play(boom_sound)
-            #pygame.mixer.music.stop()
-            self.kill()#???? если убрать килл будет плавать картинка взрыва
+            death.play()
+            tasks.append(['bom', self, 10])
 
     def check_intersection(self, area):
         x, y, w, h = self.rect[:]
@@ -192,43 +181,48 @@ class Building(pygame.sprite.Sprite):
         else:
             pass
 
+
 start_screen()
-
-
-
-#fullname1 = os.path.join('data', 'boom_music.mp3')
-#boom_sound = pygame.mixer.Sound(fullname1)
-
+begin_attack = False
+boom = pygame.mixer.Sound(resource_path(os.path.join('data', 'boom_sound.wav')))
+death = pygame.mixer.Sound(resource_path(os.path.join('data', 'death_sound.wav')))
+pygame.mixer.music.load(resource_path(os.path.join('data', 'fon_music.mp3')))
+pygame.mixer.music.set_volume(0.1)
+tasks = []
 while pygame.event.wait().type != pygame.QUIT:
-    fullname = os.path.join('data', 'fon_music.mp3')
-    pygame.mixer.music.load(fullname)
-    pygame.mixer.music.set_volume(0.1)
-    pygame.mixer.music.play(loops=-1)
-    #is_start = True ### в инитале точно такая же переменная
-    all_sprites = pygame.sprite.Group()
-    tiles_group = pygame.sprite.Group()
-    creep_group = pygame.sprite.Group()
-    tower_group = pygame.sprite.Group()
 
-    pygame.time.set_timer(FIRE, 300)
+    pygame.mixer.music.play(loops=-1)
+
+    all_sprites, tiles_group, creep_group, tower_group = \
+        pygame.sprite.Group(), pygame.sprite.Group(), pygame.sprite.Group(), pygame.sprite.Group()
+
+    is_start = True
+    text = False
+
+    pygame.time.set_timer(FIRE, 1000)
     pygame.time.set_timer(start_wait, 1000)
     pygame.time.set_timer(spawn_creep, 1000)
 
     can_place = []
-    begin_attack = False
-    text = False
     level = load_level('level.txt')
     level_x, level_y = generate_level(level)
     size = width, height = level_x * tile_width + tile_width, level_y * tile_height + tile_height
+    gamescreen = pygame.display.set_mode(size)
 
     pygame.init()
-    gamescreen = pygame.display.set_mode(size)
     player = Player()
+    SCORE = 300
+    COST = 0
 
     while True:
+        all_sprites.draw(gamescreen)
+        creep_group.update()
+        tower_group.update()
+
         for event in pygame.event.get():
             if event.type == pygame.MOUSEBUTTONDOWN:
                 if event.button == 3:
+
                     make_enemy(-1, 20, 10)
                 elif event.button == 1:
                     place_tower(*event.pos)
@@ -242,15 +236,6 @@ while pygame.event.wait().type != pygame.QUIT:
                 if event.key == pygame.K_t:
                     print_rect = not print_rect
 
-            if event.type == FIRE:
-                for area in [tower.area[:] for tower in tower_group]:
-                    col = [sprite for sprite in creep_group if sprite.check_intersection(area)]
-                    if col:
-                        col[randint(0, len(col) - 1)].hp -= 2
-                        text = True
-                        text_x = col[randint(0, len(col) - 1)].x * sprite_size
-                        text_y = col[randint(0, len(col) - 1)].y * sprite_size
-
             if event.type == start_wait and is_start is True:
                 is_start = False
                 begin_attack = True
@@ -259,26 +244,42 @@ while pygame.event.wait().type != pygame.QUIT:
                 if randint(1, 3) == 3:
                     make_enemy(-1, randint(15, 25), randint(15, 25))
 
+            if event.type == FIRE:
+                for area in [tower.area[:] for tower in tower_group]:
+                    col = [sprite for sprite in creep_group.sprites() if sprite.check_intersection(area)]
+                    if col:
+                        ncol = randint(0, len(col) - 1)
+                        col[ncol].hp -= 4
+                        boom.play(loops=1)
+                        # text = True
+                        text_x = col[ncol].rect.x
+                        text_y = col[ncol].rect.y
+                        tasks.append(['hp', text_x, text_y, 10])
 
-        all_sprites.draw(gamescreen)
-        creep_group.update()
-        tower_group.update()
         if begin_attack:
-            draw_text(gamescreen, "Attack!!!", 40, 750 * ratio, 200 * ratio)
+            draw_text(gamescreen, "Attack!!!", 40, 750 * ratio, 200 * ratio, pygame.Color('red'))
 
-        if text: ####<-------------------------
-            draw_text(gamescreen, '-2', int(10 * (ratio / 0.5)), text_x, text_y + 10)
-            text = False
-            pygame.display.flip()
+        for n, task in enumerate(tasks):
+            if task[0] == 'hp':
+                draw_text(gamescreen, '-4', int(10 * (ratio / 0.5)), int(task[1] + 25 * ratio),
+                          int(task[2] + 25 * ratio), pygame.Color('red'))
+                tasks[n][3] -= 1
+                if tasks[n][3] <= 0:
+                    del tasks[n]
+            elif task[0] == 'bom':
+                task[2] -= 1
+                if tasks[n][2] <= 0:
+                    task[1].kill()
+                # print(task)
+            # text = False
 
         draw_text(gamescreen, str(SCORE), int(18 * (ratio / 0.5)), 200 * ratio, 10 * ratio)
         draw_text(gamescreen, f"Стоимость башни: {str(COST)}", int(15 * (ratio / 0.5)), 800 * ratio, 10 * ratio)
         player.draw_lives_bar(gamescreen, 5, 5, player.lives)
+
         if player.is_game_over():
             pygame.mixer.music.stop()
             start_screen('gameoverHQ.jpg')
-            SCORE = 300
-            COST = 100
             break
         clock.tick(FPS)
         pygame.display.flip()

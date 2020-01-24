@@ -4,13 +4,11 @@ import sys
 from PIL import Image
 
 move = True
-SCORE = 300
-COST = 100
+
 FPS = 60
-sprite_size = 50
+sprite_size = 25
 size = WIDTH, HEIGHT = 500, 500
 FIRE = 30
-is_start = True ###<-----------
 start_wait = 31
 spawn_creep = 29
 generate_text = 28
@@ -25,13 +23,21 @@ running = True
 clock = pygame.time.Clock()
 
 
+def resource_path(relative):
+    # функция позволяющая импортироать файлы при компиляции
+    if hasattr(sys, '_MEIPASS'):
+        return os.path.join(sys._MEIPASS, relative)
+    else:
+        return os.path.join(os.path.abspath("."), relative)
+
+
 def resize_image(sizer, exepte=()):
     width, height = sizer
     os.chdir(os.getcwd() + '\\data')
     for pic in os.listdir(path='.'):
         pic: str
         if not pic.endswith('HQ.png') and pic.endswith('.png') and pic not in exepte:
-            img = Image.open(pic[:-4] + 'HQ.png')
+            img = Image.open(resource_path(pic[:-4] + 'HQ.png'))
             if pic == 'blace.png':
                 resized_img = img.resize((width * 2, height * 2), Image.ANTIALIAS)
             else:
@@ -41,7 +47,7 @@ def resize_image(sizer, exepte=()):
 
 
 def load_image(name, color_key=None):
-    fullname = os.path.join('data', name)
+    fullname = resource_path(os.path.join('data', name))
     try:
         image = pygame.image.load(fullname)
     except pygame.error as message:

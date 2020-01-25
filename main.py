@@ -236,10 +236,8 @@ while pygame.event.wait().type != pygame.QUIT:
 
             if event.type == spawn_creep and is_start is False:
                 x = randint(1, 2)
-                print('spawn', x)
                 if x == 2:
                     make_enemy(0, randint(20, 23), randint(15, 18))
-                    print([creep.rect for creep in creep_group.sprites()])
 
             if event.type == FIRE:  # атака врага башней
                 for area in [tower.area[:] for tower in tower_group]:
